@@ -1,0 +1,14 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="bakeryshopapi:war">
+    <output-path>$PROJECT_DIR$/bakeryshopappi/target</output-path>
+    <properties id="maven-jee-properties">
+      <options>
+        <module>bakeryshopapi</module>
+        <packaging>war</packaging>
+      </options>
+    </properties>
+    <root id="archive" name="bakeryshopapi-0.0.1.war">
+      <element id="artifact" artifact-name="bakeryshopapi:war exploded" />
+    </root>
+  </artifact>
+</component>
