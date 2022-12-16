@@ -650,9 +650,9 @@ const AddProductImport = () => {
                                             <TableRow>
                                                 <TableCell colSpan={2} />
 
-                                                <TableCell colSpan={4} align="right">
+                                                {/* <TableCell colSpan={4} align="right">
                                                     <b style={{ fontSize: 20 }} translate="no">Tổng tiền: {(getTotalPrice()).toLocaleString('it-IT', { style: 'currency', currency: 'VND' })}</b>
-                                                </TableCell>
+                                                </TableCell> */}
                                             </TableRow>
                                         </TableBody>
                                     </Table>

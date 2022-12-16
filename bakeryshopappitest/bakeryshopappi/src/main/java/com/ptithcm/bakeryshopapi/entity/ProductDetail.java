@@ -58,5 +58,7 @@ public class ProductDetail implements Serializable {
 
     private long stock;
 
+    private Date deletedAt;
+
 
 }

@@ -29,7 +29,7 @@ public class Promotion implements Serializable {
 
 
 //    @CreationTimestamp
-//    private Date createdAt;
+    private Date createdAt;
 
 //    @Column(name = "start_date")
     private Date startDate;
@@ -57,8 +57,10 @@ public class Promotion implements Serializable {
     @JoinColumn(
             name = "employee_id",
             referencedColumnName = "id",
-            nullable = true
+            nullable = false
     )
     @JsonIgnoreProperties("orders")
     private User employeeId;
+
+
 }

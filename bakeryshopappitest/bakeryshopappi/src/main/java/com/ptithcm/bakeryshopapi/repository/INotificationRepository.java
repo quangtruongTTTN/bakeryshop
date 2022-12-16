@@ -13,5 +13,7 @@ public interface INotificationRepository extends JpaRepository<Notification, Lon
 //    List<Notification> getNotificationByReadIsFalseAndDeliverIsTrue(Boolean read, Boolean deliver);
     List<Notification> getNotificationByReadIsFalseAndDeliverIsTrue();
     List<Notification> findAll();
+    List<Notification> findTop10NotificationByOrderByCreatedAtDesc();
+//    List<Notification> findTop10NotificationOrderByCreatedAtDesc();
 //    List<Notification> getNotificationByReadEquals();
 }

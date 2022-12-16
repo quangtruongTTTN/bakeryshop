@@ -1,8 +1,10 @@
 package com.ptithcm.bakeryshopapi.controller;
 
 import com.ptithcm.bakeryshopapi.entity.Product;
+import com.ptithcm.bakeryshopapi.entity.ProductDetail;
 import com.ptithcm.bakeryshopapi.entity.SizeOption;
 import com.ptithcm.bakeryshopapi.payload.response.MessageResponse;
+import com.ptithcm.bakeryshopapi.repository.IProductDetailRepository;
 import com.ptithcm.bakeryshopapi.repository.IProductRepository;
 import com.ptithcm.bakeryshopapi.repository.ISizeOptionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,9 +27,10 @@ public class SizeOptionController {
 
     @Autowired
     private ISizeOptionRepository sizeOptionRepository;
-
     @Autowired
     private IProductRepository productRepository;
+    @Autowired
+    private IProductDetailRepository productDetailRepository;
 
     @GetMapping("/list")
     public ResponseEntity<?> getSizeOptions() {
@@ -73,6 +77,10 @@ public class SizeOptionController {
 
     @PutMapping("/delete/{id}")
     public ResponseEntity<?> deleteSizeOptionsById(@PathVariable Long id) {
+        Pageable pageable = PageRequest.of(
+                1 - 1, 3,
+                Sort.by("id").descending()
+        );
         SizeOption sizeOptions = sizeOptionRepository.findById(id).get();
 //        if (sizeOptions.getDeletedAt() == null) {
 //            sizeOptions.setDeletedAt(new Date());
@@ -80,19 +88,23 @@ public class SizeOptionController {
 //            sizeOptions.setDeletedAt(null);
 //        }
 //        sizeOptionRepository.save(sizeOptions);
-        List<Product> products = productRepository.findAll();
+//        List<Product> products = productRepository.findAll();
+        List<ProductDetail> productDetails = productDetailRepository.findAll();
 
-        for(Product product: products){
-            if(product.getSizeOptions().contains(sizeOptions)){
-                product.setSizeOptions(product.getSizeOptions().stream().filter(s -> s.getId() != sizeOptions.getId()).collect(Collectors.toSet()));
-                productRepository.save(product);
+        for(ProductDetail productDetail: productDetails){
+            if(productDetail.getSizeOption().getId()==sizeOptions.getId()){
+                if (sizeOptions.getDeletedAt() == null) {
+                    sizeOptions.setDeletedAt(new Date());
+                } else {
+                    sizeOptions.setDeletedAt(null);
+                }
+                sizeOptionRepository.save(sizeOptions);
+                return new ResponseEntity(sizeOptionRepository.findAll(pageable), HttpStatus.OK);
             }
+
         }
 
-        Pageable pageable = PageRequest.of(
-                1 - 1, 3,
-                 Sort.by("id").descending()
-        );
+
 
         sizeOptionRepository.delete(sizeOptions);
 

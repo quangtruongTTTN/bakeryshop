@@ -13,7 +13,11 @@ import React from "react";
 import { PromotionUpdateAction } from "../../../store/actions/PromotionAction";
 import { useHistory, useLocation } from "react-router-dom";
 import Notification from "../../../common/Notification";
-
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import dayjs, { Dayjs } from 'dayjs';
+import Stack from '@mui/material/Stack';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 const useStyles = makeStyles((theme) => ({
   root: {
     overflow: "hidden",
@@ -72,7 +76,9 @@ const EditPromotion = () => {
   const [promotion] = useState(location.state.promotion);
 
   const { promotions } = useSelector((state) => state.promotion);
-
+  const [startDate, setStartDate] = useState(dayjs(promotion.startDate));
+  const [endDate, setEndDate] = useState(dayjs(promotion.endDate));
+  const auth = useSelector((state) => state.auth);
   const {
     register,
     handleSubmit,
@@ -87,16 +93,23 @@ const EditPromotion = () => {
     const foundName = promotions.some((item) => {
       return item.name === data.name;
     });
+    const obj = {
+      "id" : promotion.id, 
+      "name" : data.name, 
+      "startDate" :  startDate,
+      "endDate": endDate,
+      "employeeId" : auth?.user?.id
+    }
     if (getValues("name") !== promotion.name) {
       if (foundName === true) {
         Notification.error("Tên đợt khuyến mãi đã tồn tại");
       } else {
-        dispatch(PromotionUpdateAction(data));
+        dispatch(PromotionUpdateAction(obj));
         history.push("/promotion");
         Notification.success("Đã cập nhật đợt khuyến mãi thành công!");
       }
     } else {
-      dispatch(PromotionUpdateAction(data));
+      dispatch(PromotionUpdateAction(obj));
       history.push("/promotion");
       Notification.success("Đã cập nhật đợt khuyến mãi thành công!");
     }
@@ -132,6 +145,36 @@ const EditPromotion = () => {
                     Nhập tên đợt khuyến mãi
                   </FormHelperText>
                 )}
+              </Grid>
+              <Grid item md={8} xs={12}>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Stack spacing={3}>
+        <DateTimePicker
+          renderInput={(params) => <TextField {...params} />}
+          label="Ngày bắt đầu"
+          value={startDate}
+          name="createdAt"
+          onChange={(newValue) => {
+            setStartDate(newValue);
+          }}
+          minDateTime={dayjs('2022-04-02T12:00')}
+        />
+        <DateTimePicker
+          renderInput={(params) => <TextField {...params} />}
+          label="Ngày kết thúc"
+          value={endDate}
+          
+          onChange={(newValue) => {
+            setEndDate(newValue);
+            // Notification.error(JSON.stringify(value));
+          }}
+          minDateTime={dayjs('2022-04-02T12:00')}
+          // minDate={dayjs('2022-02-14')}
+          // minTime={dayjs('2022-02-14T08:00')}
+          // maxTime={dayjs('2022-02-14T18:45')}
+        />
+      </Stack>
+    </LocalizationProvider>
               </Grid>
             </Grid>
 

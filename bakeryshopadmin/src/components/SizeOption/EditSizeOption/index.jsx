@@ -134,7 +134,7 @@ const EditSizeOption = () => {
                   </FormHelperText>
                 )}
 
-                <TextField
+                {/* <TextField
                   label="Nhập giá size"
                   style={{ marginTop: 10 }}
                   defaultValue={sizeOption.price}
@@ -157,7 +157,7 @@ const EditSizeOption = () => {
                   >
                     {errors.price?.message}
                   </FormHelperText>
-                )}
+                )} */}
               </Grid>
             </Grid>
 

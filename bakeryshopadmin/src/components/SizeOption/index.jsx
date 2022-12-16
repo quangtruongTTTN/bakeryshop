@@ -138,7 +138,7 @@ const SizeOption = () => {
 
   const fields = [
     { name: "name", label: "Tên Kích Thước", dir: "asc" },
-    { name: "price", label: "Giá", dir: "asc" },
+    // { name: "price", label: "Giá", dir: "asc" },
     { label: "Trạng thái" },
     { label: "Hành Động" },
   ];
@@ -248,14 +248,14 @@ const SizeOption = () => {
             {sizeOptions.map((u) => (
               <TableRow key={u.id}>
                 <TableCell>{u.name}</TableCell>
-                <TableCell>
+                {/* <TableCell>
                   {u.price
                     .toLocaleString("it-IT", {
                       style: "currency",
                       currency: "VND",
                     })
                     .toString()}
-                </TableCell>
+                </TableCell> */}
                 <TableCell>
                   {u.deletedAt ? (
                     <Chip

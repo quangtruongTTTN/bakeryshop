@@ -31,7 +31,12 @@ const DetailProduct = () => {
   const classes = useStyles();
   const location = useLocation();
   const [product] = useState(location?.state?.product);
+  const [sizeOptions] = useState(product.productDetails.map((p) => ({
+    id: p.sizeOption.id,
+    name: p.sizeOption.name,
+  })));
 
+  
   return (
     <div className={classes.root}>
       {Object.is(product, undefined) && <Redirect to="/product" />}
@@ -62,8 +67,8 @@ const DetailProduct = () => {
                   {product?.categoryId?.name}
                 </Typography>
                 <Typography variant="h6">Kích thước sản phẩm:</Typography>
-                {product?.sizeOptions.map((item) => (
-                  <Chip key={item.id} label={item.name} color="primary" />
+                {product?.productDetails.map((item) => (
+                  <Chip key={item?.sizeOption.id} label={item?.sizeOption.name} color="primary" />
                 ))}
                 {/* <Typography variant="h6">Topping thêm vào:</Typography>
                 {product?.additionOptions.map((item) => (

@@ -1,8 +1,6 @@
 package com.ptithcm.bakeryshopapi.controller;
 
-import com.ptithcm.bakeryshopapi.entity.Product;
-import com.ptithcm.bakeryshopapi.entity.User;
-import com.ptithcm.bakeryshopapi.entity.Wishlist;
+import com.ptithcm.bakeryshopapi.entity.*;
 import com.ptithcm.bakeryshopapi.payload.request.WishlistRequest;
 import com.ptithcm.bakeryshopapi.payload.response.WishlistResponse;
 import com.ptithcm.bakeryshopapi.repository.IProductRepository;
@@ -14,7 +12,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -57,7 +58,36 @@ public class WishListController {
         for(Wishlist wl : wishlists) {
             products.add(productRepository.findById(wl.getProductId()).get());
         }
+        products= products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null)
+                .collect(Collectors.toList());
+        for (Product p : products) {
+            if (p.getProductDetails() != null) {
+                Collection<ProductDetail> productDetails = p.getProductDetails()
+                        .stream().filter(pd -> pd.getDeletedAt() == null).collect(Collectors.toList());
+                p.setProductDetails(productDetails);
+            }
+        }
+        for (Product p : products) {
+            if (p.getPromotionDetails() != null) {
+                List<PromotionDetail> promotionDetails = p.getPromotionDetails().stream()
+                        .sorted(Comparator.comparing(PromotionDetail::getDiscount).reversed())
+                        .collect(Collectors.toList());
+                p.setPromotionDetails(promotionDetails);
+            }
+        }
+        for (Product p : products) {
+            Collection<ProductDetail> productDetails = p.getProductDetails();
+            for(ProductDetail pd : productDetails){
+                if (pd.getPriceHistories() != null) {
+                    List<PriceHistory> priceHistories = pd.getPriceHistories().stream()
+                            .sorted(Comparator.comparing(PriceHistory::getCreatedAt).reversed())
+                            .collect(Collectors.toList());
+                    pd.setPriceHistories(priceHistories);
+                }
+            }
+            p.setProductDetails(productDetails);
 
+        }
         wishlistResponse.setProducts(products);
         wishlistResponse.setQuantity(products.size());
 
@@ -82,7 +112,36 @@ public class WishListController {
         for(Wishlist wl : wishlists) {
             products.add(productRepository.findById(wl.getProductId()).get());
         }
+        products= products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null)
+                .collect(Collectors.toList());
+        for (Product p : products) {
+            if (p.getProductDetails() != null) {
+                Collection<ProductDetail> productDetails = p.getProductDetails()
+                        .stream().filter(pd -> pd.getDeletedAt() == null).collect(Collectors.toList());
+                p.setProductDetails(productDetails);
+            }
+        }
+        for (Product p : products) {
+            if (p.getPromotionDetails() != null) {
+                List<PromotionDetail> promotionDetails = p.getPromotionDetails().stream()
+                        .sorted(Comparator.comparing(PromotionDetail::getDiscount).reversed())
+                        .collect(Collectors.toList());
+                p.setPromotionDetails(promotionDetails);
+            }
+        }
+        for (Product p : products) {
+            Collection<ProductDetail> productDetails = p.getProductDetails();
+            for(ProductDetail pd : productDetails){
+                if (pd.getPriceHistories() != null) {
+                    List<PriceHistory> priceHistories = pd.getPriceHistories().stream()
+                            .sorted(Comparator.comparing(PriceHistory::getCreatedAt).reversed())
+                            .collect(Collectors.toList());
+                    pd.setPriceHistories(priceHistories);
+                }
+            }
+            p.setProductDetails(productDetails);
 
+        }
         wishlistResponse.setProducts(products);
         wishlistResponse.setQuantity(products.size());
         return  ResponseEntity.ok(wishlistResponse);
@@ -104,6 +163,36 @@ public class WishListController {
             products.add(productRepository.findById(wl.getProductId()).get());
         }
 
+        products= products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null)
+                .collect(Collectors.toList());
+        for (Product p : products) {
+            if (p.getProductDetails() != null) {
+                Collection<ProductDetail> productDetails = p.getProductDetails()
+                        .stream().filter(pd -> pd.getDeletedAt() == null).collect(Collectors.toList());
+                p.setProductDetails(productDetails);
+            }
+        }
+        for (Product p : products) {
+            if (p.getPromotionDetails() != null) {
+                List<PromotionDetail> promotionDetails = p.getPromotionDetails().stream()
+                        .sorted(Comparator.comparing(PromotionDetail::getDiscount).reversed())
+                        .collect(Collectors.toList());
+                p.setPromotionDetails(promotionDetails);
+            }
+        }
+        for (Product p : products) {
+            Collection<ProductDetail> productDetails = p.getProductDetails();
+            for(ProductDetail pd : productDetails){
+                if (pd.getPriceHistories() != null) {
+                    List<PriceHistory> priceHistories = pd.getPriceHistories().stream()
+                            .sorted(Comparator.comparing(PriceHistory::getCreatedAt).reversed())
+                            .collect(Collectors.toList());
+                    pd.setPriceHistories(priceHistories);
+                }
+            }
+            p.setProductDetails(productDetails);
+
+        }
 
         wishlistResponse.setProducts(products);
         wishlistResponse.setQuantity(products.size());

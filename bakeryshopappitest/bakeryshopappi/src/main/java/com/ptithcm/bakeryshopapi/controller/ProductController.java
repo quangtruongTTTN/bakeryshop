@@ -4,14 +4,10 @@ package com.ptithcm.bakeryshopapi.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptithcm.bakeryshopapi.dto.ResponseMessage;
 import com.ptithcm.bakeryshopapi.entity.*;
-import com.ptithcm.bakeryshopapi.payload.request.ProducUpdatetRequest;
-import com.ptithcm.bakeryshopapi.payload.request.ProductDetailRequest;
-import com.ptithcm.bakeryshopapi.payload.request.ProductTest;
+import com.ptithcm.bakeryshopapi.payload.request.*;
 import com.ptithcm.bakeryshopapi.payload.response.MessageResponse;
-import com.ptithcm.bakeryshopapi.payload.request.ProductRequest;
 
 import com.ptithcm.bakeryshopapi.payload.response.ProductResponse;
-import com.ptithcm.bakeryshopapi.payload.response.ShipperResponse;
 import com.ptithcm.bakeryshopapi.repository.*;
 import com.ptithcm.bakeryshopapi.service.CloudinaryService;
 
@@ -114,11 +110,41 @@ public class ProductController {
 
     @GetMapping("/listRelate")
     //TODO @PreAuthorize("hasRole('ADMIN') or hasRole('EMPLOYEE')")
-    public ResponseEntity<?> getRelateProducts(
+    public ResponseEntity<?> getRelateProducts(@RequestParam(defaultValue = "1") long id) {
+        List<Product> products = productRepository.findTop12ByCategoryId_Id(id)
+                .stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null)
+                .collect(Collectors.toList());
+        for (Product p : products) {
+            if (p.getProductDetails() != null) {
+                Collection<ProductDetail> productDetails = p.getProductDetails()
+                        .stream().filter(pd -> pd.getDeletedAt() == null).collect(Collectors.toList());
+                p.setProductDetails(productDetails);
+            }
+        }
+        Date date = new Date();
+        for (Product p : products) {
+            if (p.getPromotionDetails() != null) {
+                List<PromotionDetail> promotionDetails = p.getPromotionDetails()
+                        .stream().filter(s -> s.getPromotion().getEndDate().after(date) && s.getPromotion().getStartDate().before(date))
+                        .sorted(Comparator.comparing(PromotionDetail::getDiscount).reversed())
+                        .collect(Collectors.toList());
+                p.setPromotionDetails(promotionDetails);
+            }
+        }
+        for (Product p : products) {
+            Collection<ProductDetail> productDetails = p.getProductDetails();
+            for(ProductDetail pd : productDetails){
+                if (pd.getPriceHistories() != null) {
+                    List<PriceHistory> priceHistories = pd.getPriceHistories().stream()
+                            .sorted(Comparator.comparing(PriceHistory::getCreatedAt).reversed()).limit(1)
+                            .collect(Collectors.toList());
+                    pd.setPriceHistories(priceHistories);
+                }
+            }
+            p.setProductDetails(productDetails);
 
-            @RequestParam(value= "id", defaultValue = "1") long id
-    ) {
-        return ResponseEntity.ok(productRepository.findTop12ByCategoryId_Id(id));
+        }
+        return ResponseEntity.ok(products);
     }
 
     //    @GetMapping("")
@@ -331,22 +357,36 @@ public class ProductController {
 
         Product product = productRepository.findById(id).get();
 
-        Set<SizeOption> sizeOptions = new HashSet<>();
+        List<SizeOption> sizeOptions = new ArrayList<>();
         if (productRequest.getSizeOptions() != null) {
             for (int i = 0; i < productRequest.getSizeOptions().size(); i++) {
                 sizeOptions.add(objectMapper.readValue(productRequest.getSizeOptions().get(i).toString(), SizeOption.class));
+            }
+
+            for (int i = 0; i < sizeOptions.size(); i++) {
+                ProductDetail productDetail = new ProductDetail();
+                productDetail.setStock(0);
+                productDetail.setProduct(productRepository.findProductById(id));
+                productDetail.setSizeOption(sizeOptionRepository.findSizeOptionById(sizeOptions.get(i).getId()));
+                productDetailRepository.save(productDetail);
+                PriceHistory priceHistory = new PriceHistory();
+                priceHistory.setPrice(0);
+                priceHistory.setProductDetailId(productDetailRepository.findById(productDetail.getId()).get());
+                priceHistory.setEmployeeId(userRepository.findUserById(1));
+                priceHistoryRepository.save(priceHistory);
             }
 //            if (!sizeOptions.contains(sizeOptionRepository.findById(1L).get())) {
 //                sizeOptions.add(sizeOptionRepository.findById(1L).get());
 //            }
         } else {
             sizeOptions = null;
+//            throw new RuntimeException();
         }
 
         product.setName(productRequest.getName());
         product.setTitle(productRequest.getTitle());
 
-        product.setSizeOptions(sizeOptions);
+//        product.setSizeOptions(sizeOptions);
 
 
         Category category = objectMapper.readValue(productRequest.getCategoryId().toString(), Category.class);
@@ -430,12 +470,14 @@ public class ProductController {
         return new ResponseEntity(product, HttpStatus.OK);
     }
 
-    //    @GetMapping("/{id}")
-//    public ResponseEntity<?> getOneProducts(@PathVariable String id) {
-//        Product product =  productRepository.findProductById(id);
-////        return ResponseEntity.ok(product);
-//        return new ResponseEntity(product, HttpStatus.OK);
-//    }
+    @PutMapping("/updateView/{id}")
+    public ResponseEntity<?> updateViewProductById(@PathVariable String id) {
+        Product product = productRepository.findById(id).get();
+        product.setViewNumber(product.getViewNumber()+1);
+        productRepository.save(product);
+        return new ResponseEntity(product, HttpStatus.OK);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getOneProducts(@PathVariable String id) {
 //        ProductDetailResponse productDetailResponse = new ProductDetailResponse();
@@ -465,15 +507,19 @@ public class ProductController {
             System.err.println(id);
             return new ResponseEntity(null, HttpStatus.OK);
         }
-        List<PromotionDetail> promotionDetails = product.getPromotionDetails().stream()
+        Date date = new Date();
+        List<PromotionDetail> promotionDetails = product.getPromotionDetails()
+                .stream().filter(s -> s.getPromotion().getEndDate().after(date) && s.getPromotion().getStartDate().before(date))
                 .sorted(Comparator.comparing(PromotionDetail::getDiscount).reversed())
                 .collect(Collectors.toList());
         product.setPromotionDetails(promotionDetails);
-        Collection<ProductDetail> productDetails = product.getProductDetails();
+//        Collection<ProductDetail> productDetails = product.getProductDetails();
+        Collection<ProductDetail> productDetails = product.getProductDetails()
+                .stream().filter(pd -> pd.getDeletedAt() == null).collect(Collectors.toList());
         for(ProductDetail pd : productDetails){
             if (pd.getPriceHistories() != null) {
                 List<PriceHistory> priceHistories = pd.getPriceHistories().stream()
-                        .sorted(Comparator.comparing(PriceHistory::getCreatedAt).reversed())
+                        .sorted(Comparator.comparing(PriceHistory::getCreatedAt).reversed()).limit(1)
                         .collect(Collectors.toList());
                 pd.setPriceHistories(priceHistories);
             }
@@ -537,11 +583,11 @@ public class ProductController {
 //
 //        return ResponseEntity.ok(productResponse);
 //    }
-
+//    public List<Product> convertToProductApi(List<Product> products){}
     @GetMapping("")
     public ResponseEntity<?> getProducts(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "4") int pageSize,
+            @RequestParam(defaultValue = "8") int pageSize,
             @RequestParam(defaultValue = "") String cateName,
             @RequestParam(defaultValue = "id") String sortField,
             @RequestParam(defaultValue = "asc") String sortDir,
@@ -558,49 +604,39 @@ public class ProductController {
         long totalPages = 1;
         ProductResponse productResponse = new ProductResponse();
         List<Product> products;
-        Page<Product> productsTemp;
-//        List<Product> productNew =  productRepository.findProductsByCategoryId_NameNotLike("Product", pageable).getContent();
-//        List<Product> productNew = productRepository.findProductsByCategoryId_NameNotLike("Product", pageable).getContent();
-        List<Product> productNew = productRepository.findProductsByCategoryId_NameNotLike("Product", Sort.by(Sort.Direction.DESC, "createdAt"));
-        productNew.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null).collect(Collectors.toList());
+        List<Product> productsTemp;
+//        List<Product> productNew = productRepository.findProductsByCategoryId_NameNotLike("Product", Sort.by(Sort.Direction.DESC, "createdAt"));
+        List<Product> productNew =
+                productRepository.findProductsByCategoryId_NameNotLike("Product")
+                        .stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null)
+                        .collect(Collectors.toList());
         if ("".equals(keyword)) {
 
             if ("".equals(cateName)) {
-//            products = productRepository.findProductsByCategoryId_NameNotLike("Product", pageable).getContent();
-//            productsTemp = productRepository.findProductsByCategoryId_NameNotLike("Product", pageable);
-                productsTemp = productRepository.findProductsByCategoryId_NameNotLike("Product", pageable);
-//            products=productsTemp.getContent();
-//            totalPages=productsTemp.getTotalPages();
-//            products = products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null).collect(Collectors.toList());
-            } else {
-
-//            products = productRepository.findProductsByCategoryId_Name(cateName, pageable).getContent();
-                productsTemp = productRepository.findProductsByCategoryId_Name(cateName, pageable);
-//            products=productsTemp.getContent();
-//            totalPages=productsTemp.getTotalPages();
-//            products = products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null).collect(Collectors.toList());
+                productsTemp = productRepository.findProductsByCategoryId_NameNotLike("Product");
+//                productsTemp = productRepository.findProductsByCategoryId_NameNotLike("Product", pageable);
+           } else {
+                productsTemp = productRepository.findProductsByCategoryId_Name(cateName);
+//                productsTemp = productRepository.findProductsByCategoryId_Name(cateName,  pageable);
             }
 
         } else {
             if ("".equals(cateName)) {
 //            products = productRepository.findProductsByCategoryId_NameNotLike("Product", pageable).getContent();
 //            productsTemp = productRepository.findProductsByCategoryId_NameNotLike("Product", pageable);
-                productsTemp = productRepository.findProductsByCategoryId_NameNotLikeAndNameContaining("Product", pageable, keyword);
-//            products=productsTemp.getContent();
-//            totalPages=productsTemp.getTotalPages();
-//            products = products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null).collect(Collectors.toList());
+                productsTemp = productRepository.findProductsByCategoryId_NameNotLikeAndNameContaining("Product",  keyword);
+//                productsTemp = productRepository.findProductsByCategoryId_NameNotLikeAndNameContaining("Product", pageable, keyword);
+//
             } else {
 
-//            products = productRepository.findProductsByCategoryId_Name(cateName, pageable).getContent();
-                productsTemp = productRepository.findProductsByCategoryId_NameAndNameContaining(cateName, pageable, keyword);
-//            products=productsTemp.getContent();
-//            totalPages=productsTemp.getTotalPages();
-//            products = products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null).collect(Collectors.toList());
+              productsTemp = productRepository.findProductsByCategoryId_NameAndNameContaining(cateName,  keyword);
+//              productsTemp = productRepository.findProductsByCategoryId_NameAndNameContaining(cateName, pageable, keyword);
+
             }
 
         }
-        products = productsTemp.getContent();
-        totalPages = productsTemp.getTotalPages();
+        products = productsTemp;
+//        totalPages = productsTemp.getTotalPages();
         products = products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null).collect(Collectors.toList());
         String newProductId = productNew.size() > 0 ? productNew.get(0).getId() : "";
 //        if (!"".equals(keyword)){
@@ -608,19 +644,17 @@ public class ProductController {
 //            products = products.stream().filter((item) -> (item.getName().toLowerCase().contains(keyword.toLowerCase())) || item.getTitle().toLowerCase().contains(keyword.toLowerCase())).collect(Collectors.toList());
 //        }
         for (Product p : products) {
-            if (p.getSaleOff() != null) {
-//                List<SaleOff> saleOffsNew = p.getSaleOff().stream().filter(s->s.getEndDate().before(date) && s.getCreatedAt().after(date)).collect(Collectors.toList());
-
-                List<SaleOff> saleOffsNew = p.getSaleOff().stream().filter(s -> s.getEndDate().after(date) && s.getCreatedAt().before(date))
-                        .sorted(Comparator.comparing(SaleOff::getCreatedAt))
-                        .collect(Collectors.toList());
-                p.setSaleOff(saleOffsNew);
+            if (p.getProductDetails() != null) {
+                Collection<ProductDetail> productDetails = p.getProductDetails()
+                        .stream().filter(pd -> pd.getDeletedAt() == null).collect(Collectors.toList());
+                p.setProductDetails(productDetails);
             }
         }
+        products = products.stream().filter(p -> p.getProductDetails().size()> 0 ).collect(Collectors.toList());
         for (Product p : products) {
             if (p.getPromotionDetails() != null) {
-                List<PromotionDetail> promotionDetails = p.getPromotionDetails().stream()
-                        // .sorted((Comparator.comparing(x  -> x.getDiscount())).reversed())
+                List<PromotionDetail> promotionDetails = p.getPromotionDetails()
+                        .stream().filter(s -> s.getPromotion().getEndDate().after(date) && s.getPromotion().getStartDate().before(date))
                         .sorted(Comparator.comparing(PromotionDetail::getDiscount).reversed())
                         .collect(Collectors.toList());
                 p.setPromotionDetails(promotionDetails);
@@ -630,11 +664,15 @@ public class ProductController {
             Collection<ProductDetail> productDetails = p.getProductDetails();
             for(ProductDetail pd : productDetails){
                 if (pd.getPriceHistories() != null) {
+//                    List<PriceHistory> priceHistories = pd.getPriceHistories().stream()
+//                            .sorted(Comparator.comparing(PriceHistory::getCreatedAt).reversed()).limit(1)
+//                            .collect(Collectors.toList());
+//                    pd.setPriceHistories(priceHistories);
                     List<PriceHistory> priceHistories = pd.getPriceHistories().stream()
-                            // .sorted((Comparator.comparing(x  -> x.getDiscount())).reversed())
-                            .sorted(Comparator.comparing(PriceHistory::getCreatedAt).reversed())
+                            .sorted(Comparator.comparing(PriceHistory::getCreatedAt).reversed()).limit(1)
                             .collect(Collectors.toList());
                     pd.setPriceHistories(priceHistories);
+//                    pd.setPriceHistories(priceHistories);
                 }
             }
             p.setProductDetails(productDetails);
@@ -646,8 +684,27 @@ public class ProductController {
 //        productResponse.setTotalPages(products.size()/8);
         productResponse.setTotalPages(totalPages);
 //        productResponse.setNewProductId("");
-
-        return ResponseEntity.ok(productResponse);
+        Optional<PromotionDetail> optionalPromotionDetail = Optional.of(new PromotionDetail(0));
+        PromotionDetail promotionDetail =new  PromotionDetail(0);
+        if(sortDir.equals("asc") && sortField.equals("price")){
+            products=products.stream()
+                    .sorted(Comparator
+                            .comparing((Product p) ->
+                                 p.getProductDetails().stream().findFirst().get().getPriceHistories().stream().findFirst().get().getPrice() * (1 - p.getPromotionDetails().stream().map(Optional::ofNullable).findFirst().orElse(Optional.of(new PromotionDetail((0)))).get().getDiscount() / 100.000))
+                            .reversed())
+//                            .comparing((Product p) -> p.getProductDetails().stream().findFirst().get().getPriceHistories().stream().findFirst().get().getPrice()).reversed())
+//                            .comparing((Product p) -> p.getPromotionDetails().stream().sorted(Comparator.comparing(PromotionDetail::getDiscount)).findFirst().get().getDiscount()))
+                    .collect(Collectors.toList());
+        }
+        else if(sortDir.equals("desc") && sortField.equals("price")){
+            products=products.stream()
+                    .sorted(Comparator
+                            .comparing((Product p) ->
+                                    (double)  p.getProductDetails().stream().findFirst().get().getPriceHistories().stream().findFirst().get().getPrice() * (1 - (double)p.getPromotionDetails().stream().map(Optional::ofNullable).findFirst().orElse(Optional.of(new PromotionDetail((0)))).get().getDiscount() / 100.000))
+                            )
+                    .collect(Collectors.toList());
+        }
+        return ResponseEntity.ok(toPage(products,pageable));
     }
 
 //    @GetMapping("")
@@ -692,19 +749,22 @@ public class ProductController {
         ProductResponse productResponse = new ProductResponse();
         List<Product> products = new ArrayList<>();
         List<String> stringsId;
-        List<Product> productNew = productRepository.findProductsByCategoryId_NameNotLike("Product", Sort.by(Sort.Direction.DESC, "id"));
-
-        productNew.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null).collect(Collectors.toList());
+//        List<Product> productNew = productRepository.findProductsByCategoryId_NameNotLike("Product", Sort.by(Sort.Direction.DESC, "id"));
+        List<Product> productNew =
+                productRepository.findProductsByCategoryId_NameNotLike("Product")
+                        .stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null)
+                        .sorted(Comparator.comparing(Product::getCreatedAt))
+                        .collect(Collectors.toList());
 
         if ("".equals(cateName)) {
             stringsId = productRepository.getHotProduct("Snack", "Product");
-            for (int i = 0; i < 4 && i < stringsId.size(); i++) {
+            for (int i = 0; i < 8 && i < stringsId.size(); i++) {
                 products.add(productRepository.findProductById(stringsId.get(i)));
             }
             products = products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null).collect(Collectors.toList());
         } else {
-            products = !"asc".equals(sortDir) ? productRepository.findProductsByCategoryId_Name(cateName, Sort.by(Sort.Direction.DESC, sortField)) : productRepository.findProductsByCategoryId_Name(cateName, Sort.by(Sort.Direction.ASC, sortField));
-            products = products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null).collect(Collectors.toList());
+//            products = !"asc".equals(sortDir) ? productRepository.findProductsByCategoryId_Name(cateName, Sort.by(Sort.Direction.DESC, sortField)) : productRepository.findProductsByCategoryId_Name(cateName, Sort.by(Sort.Direction.ASC, sortField));
+//            products = products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null).collect(Collectors.toList());
         }
 
         String newProductId = productNew.size() > 0 ? productNew.get(0).getId() : "";
@@ -712,12 +772,43 @@ public class ProductController {
         if (!"".equals(keyword)) {
             products = products.stream().filter((item) -> (item.getName().toLowerCase().contains(keyword.toLowerCase())) || item.getTitle().toLowerCase().contains(keyword.toLowerCase())).collect(Collectors.toList());
         }
+        for (Product p : products) {
+            if (p.getProductDetails() != null) {
+                Collection<ProductDetail> productDetails = p.getProductDetails()
+                        .stream().filter(pd -> pd.getDeletedAt() == null).collect(Collectors.toList());
+                p.setProductDetails(productDetails);
+            }
+        }
+        Date date = new Date();
+        for (Product p : products) {
+            if (p.getPromotionDetails() != null) {
+                List<PromotionDetail> promotionDetails = p.getPromotionDetails()
+                        .stream().filter(s -> s.getPromotion().getEndDate().after(date) && s.getPromotion().getStartDate().before(date))
+                        // .sorted((Comparator.comparing(x  -> x.getDiscount())).reversed())
+                        .sorted(Comparator.comparing(PromotionDetail::getDiscount).reversed())
+                        .collect(Collectors.toList());
+                p.setPromotionDetails(promotionDetails);
+            }
+        }
+        for (Product p : products) {
+            Collection<ProductDetail> productDetails = p.getProductDetails();
+            for(ProductDetail pd : productDetails){
+                if (pd.getPriceHistories() != null) {
+                    List<PriceHistory> priceHistories = pd.getPriceHistories().stream()
+                            .sorted(Comparator.comparing(PriceHistory::getCreatedAt).reversed()).limit(1)
+                            .collect(Collectors.toList());
+                    pd.setPriceHistories(priceHistories);
+                }
+            }
+            p.setProductDetails(productDetails);
 
+        }
         productResponse.setProduct(products);
         productResponse.setNewProductId(newProductId);
 
         return ResponseEntity.ok(productResponse);
     }
+
 
     @GetMapping("/favorite")
     public ResponseEntity<?> getFavoriteProducts(
@@ -729,18 +820,53 @@ public class ProductController {
         ProductResponse productResponse = new ProductResponse();
         List<Product> products = new ArrayList<>();
         List<String> stringsId;
-        List<Product> productNew = productRepository.findProductsByCategoryId_NameNotLike("Product", Sort.by(Sort.Direction.DESC, "id"));
-        productNew.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null).collect(Collectors.toList());
+//        List<Product> productNew = productRepository.findProductsByCategoryId_NameNotLike("Product", Sort.by(Sort.Direction.DESC, "id"));
+        List<Product> productNew =
+                productRepository.findProductsByCategoryId_NameNotLike("Product")
+                .stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null)
+                        .sorted(Comparator.comparing(Product::getCreatedAt))
+                        .collect(Collectors.toList());
 
         if ("".equals(cateName)) {
             stringsId = productRepository.getFavoriteProduct("Snack", "Product");
-            for (int i = 0; i < 4 && i < stringsId.size(); i++) {
+            for (int i = 0; i < 8 && i < stringsId.size(); i++) {
                 products.add(productRepository.findProductById(stringsId.get(i)));
             }
             products = products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null).collect(Collectors.toList());
+            for (Product p : products) {
+                if (p.getProductDetails() != null) {
+                    Collection<ProductDetail> productDetails = p.getProductDetails()
+                            .stream().filter(pd -> pd.getDeletedAt() == null).collect(Collectors.toList());
+                    p.setProductDetails(productDetails);
+                }
+            }
+            Date date = new Date();
+            for (Product p : products) {
+                if (p.getPromotionDetails() != null) {
+                    List<PromotionDetail> promotionDetails = p.getPromotionDetails()
+                            .stream().filter(s -> s.getPromotion().getEndDate().after(date) && s.getPromotion().getStartDate().before(date))
+                            // .sorted((Comparator.comparing(x  -> x.getDiscount())).reversed())
+                            .sorted(Comparator.comparing(PromotionDetail::getDiscount).reversed())
+                            .collect(Collectors.toList());
+                    p.setPromotionDetails(promotionDetails);
+                }
+            }
+            for (Product p : products) {
+                Collection<ProductDetail> productDetails = p.getProductDetails();
+                for(ProductDetail pd : productDetails){
+                    if (pd.getPriceHistories() != null) {
+                        List<PriceHistory> priceHistories = pd.getPriceHistories().stream()
+                                .sorted(Comparator.comparing(PriceHistory::getCreatedAt).reversed()).limit(1)
+                                .collect(Collectors.toList());
+                        pd.setPriceHistories(priceHistories);
+                    }
+                }
+                p.setProductDetails(productDetails);
+
+            }
         } else {
-            products = !"asc".equals(sortDir) ? productRepository.findProductsByCategoryId_Name(cateName, Sort.by(Sort.Direction.DESC, sortField)) : productRepository.findProductsByCategoryId_Name(cateName, Sort.by(Sort.Direction.ASC, sortField));
-            products = products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null).collect(Collectors.toList());
+//            products = !"asc".equals(sortDir) ? productRepository.findProductsByCategoryId_Name(cateName, Sort.by(Sort.Direction.DESC, sortField)) : productRepository.findProductsByCategoryId_Name(cateName, Sort.by(Sort.Direction.ASC, sortField));
+//            products = products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null).collect(Collectors.toList());
         }
 
         String newProductId = productNew.size() > 0 ? productNew.get(0).getId() : "";
@@ -755,6 +881,111 @@ public class ProductController {
         return ResponseEntity.ok(productResponse);
     }
 
+
+    @GetMapping("/view")
+    public ResponseEntity<?> getTopViewProducts(
+            @RequestParam(defaultValue = "") String cateName,
+            @RequestParam(defaultValue = "id") String sortField,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(defaultValue = "") String keyword
+    ) {
+
+        List<Product> products = productRepository.findAll();
+
+
+        if ("".equals(cateName)) {
+
+
+            products = products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null)
+                    .sorted(Comparator.comparing(Product::getViewNumber).reversed()).limit(8)
+                    .collect(Collectors.toList());
+            for (Product p : products) {
+                if (p.getProductDetails() != null) {
+                    Collection<ProductDetail> productDetails = p.getProductDetails()
+                            .stream().filter(pd -> pd.getDeletedAt() == null).collect(Collectors.toList());
+                    p.setProductDetails(productDetails);
+                }
+            }
+            Date date = new Date();
+            for (Product p : products) {
+                if (p.getPromotionDetails() != null) {
+                    List<PromotionDetail> promotionDetails = p.getPromotionDetails()
+                            .stream().filter(s -> s.getPromotion().getEndDate().after(date) && s.getPromotion().getStartDate().before(date))
+                            .sorted(Comparator.comparing(PromotionDetail::getDiscount).reversed())
+                            .collect(Collectors.toList());
+                    p.setPromotionDetails(promotionDetails);
+                }
+            }
+            for (Product p : products) {
+                Collection<ProductDetail> productDetails = p.getProductDetails();
+                for(ProductDetail pd : productDetails){
+                    if (pd.getPriceHistories() != null) {
+                        List<PriceHistory> priceHistories = pd.getPriceHistories().stream()
+                                .sorted(Comparator.comparing(PriceHistory::getCreatedAt).reversed()).limit(1)
+                                .collect(Collectors.toList());
+                        pd.setPriceHistories(priceHistories);
+                    }
+                }
+                p.setProductDetails(productDetails);
+
+            }
+        }
+
+        return ResponseEntity.ok(products);
+    }
+
+    @GetMapping("/new")
+    public ResponseEntity<?> getNewProducts(
+            @RequestParam(defaultValue = "") String cateName,
+            @RequestParam(defaultValue = "id") String sortField,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(defaultValue = "") String keyword
+    ) {
+
+        List<Product> products = productRepository.findAll();
+
+
+        if ("".equals(cateName)) {
+
+
+            products = products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null)
+                    .sorted(Comparator.comparing(Product::getCreatedAt).reversed()).limit(8)
+                    .collect(Collectors.toList());
+            for (Product p : products) {
+                if (p.getProductDetails() != null) {
+                    Collection<ProductDetail> productDetails = p.getProductDetails()
+                            .stream().filter(pd -> pd.getDeletedAt() == null).collect(Collectors.toList());
+                    p.setProductDetails(productDetails);
+                }
+            }
+            Date date = new Date();
+            for (Product p : products) {
+                if (p.getPromotionDetails() != null) {
+                    List<PromotionDetail> promotionDetails = p.getPromotionDetails()
+                            .stream().filter(s -> s.getPromotion().getEndDate().after(date) && s.getPromotion().getStartDate().before(date))
+                            // .sorted((Comparator.comparing(x  -> x.getDiscount())).reversed())
+                            .sorted(Comparator.comparing(PromotionDetail::getDiscount).reversed())
+                            .collect(Collectors.toList());
+                    p.setPromotionDetails(promotionDetails);
+                }
+            }
+            for (Product p : products) {
+                Collection<ProductDetail> productDetails = p.getProductDetails();
+                for(ProductDetail pd : productDetails){
+                    if (pd.getPriceHistories() != null) {
+                        List<PriceHistory> priceHistories = pd.getPriceHistories().stream()
+                                .sorted(Comparator.comparing(PriceHistory::getCreatedAt).reversed()).limit(1)
+                                .collect(Collectors.toList());
+                        pd.setPriceHistories(priceHistories);
+                    }
+                }
+                p.setProductDetails(productDetails);
+
+            }
+        }
+
+        return ResponseEntity.ok(products);
+    }
 
     @GetMapping("/showAll")
     public ResponseEntity<?> showAll() {

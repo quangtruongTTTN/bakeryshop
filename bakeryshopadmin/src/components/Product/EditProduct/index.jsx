@@ -111,8 +111,22 @@ const EditProduct = () => {
   // const { additionOptions } = useSelector((state) => state.additionOption);
 
   const { sizeOptions } = useSelector((state) => state.sizeOption);
-  const [checkSize,setCheckSize] = useState(product.sizeOptions);
+  // const [checkSize,setCheckSize] = useState(product.sizeOptions);
+  // const [checkSize,setCheckSize] = useState(product.sizeOptions);
+  
+  const [leftSize, setLeftSize] = useState([]);
+  // const [rightSize, setRightSize] = useState(product.sizeOptions);
+  const [rightSize, setRightSize] = useState(product.productDetails.map((p) => ({
+    id: p.sizeOption.id,
+    name: p.sizeOption.name,
+  })));
+  const [checkSize,setCheckSize] = useState(rightSize);
 
+  
+  // const [checkSize,setCheckSize] = useState(product.productDetails.map((p) => ({
+  //   id: p.sizeOption.id,
+  //   name: p.sizeOption.name,
+  // })));
   // var addOptionLeft = location.state.addition;
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
@@ -138,7 +152,9 @@ const EditProduct = () => {
     // return;
     data.categoryId = categories.find((c) => c.name === data.categoryId);
     // data.additionOptions = right;
-    data.sizeOptions = rightSize;
+    // data.sizeOptions = rightSize;
+    data.sizeOptions = not(rightSize, checkSize);
+    
     data.multipartFile = data.multipartFile[0] ? data.multipartFile[0] : null;
     // for (let i = 0; i < count; i++) {
       
@@ -272,8 +288,7 @@ const EditProduct = () => {
     setOpenSize(false);
   };
 
-  const [leftSize, setLeftSize] = useState([]);
-  const [rightSize, setRightSize] = useState(product.sizeOptions);
+  
   const [addOpenSize, setaddOpenSize] = useState(0);
   const [productDetails,setProductDetails]= useState(product.productDetails);
 
@@ -300,6 +315,7 @@ const EditProduct = () => {
 
   const handleAllLeftSize = () => {
     // setLeftSize(leftSize.concat(rightSize));
+    
     setLeftSize(leftSize.concat(not(rightSize, checkSize)));
     setRightSize(checkSize);
     // setRightSize([]);
@@ -310,9 +326,14 @@ const EditProduct = () => {
     // return;
     if (addOpenSize === 0) {
       setaddOpenSize(1);
-      for (let i = 0; i < product.sizeOptions.length; i++) {
+      // for (let i = 0; i < product.sizeOptions.length; i++) {
+      //   sizeOptionLeft = sizeOptionLeft.filter(
+      //     (a) => a.name !== product.sizeOptions[i].name
+      //   );
+      // }
+      for (let i = 0; i < productDetails.length; i++) {
         sizeOptionLeft = sizeOptionLeft.filter(
-          (a) => a.name !== product.sizeOptions[i].name
+          (a) => a.name !== productDetails[i].sizeOption.name
         );
       }
       setLeftSize(sizeOptionLeft);

@@ -84,7 +84,7 @@ const CreateSizeOption = () => {
                   </FormHelperText>
                 )}
 
-                <TextField
+                {/* <TextField
                   label="Nhập giá"
                   style={{ marginTop: 10 }}
                   fullWidth
@@ -106,7 +106,7 @@ const CreateSizeOption = () => {
                   >
                     {errors.price?.message}
                   </FormHelperText>
-                )}
+                )} */}
               </Grid>
             </Grid>
 

@@ -57,4 +57,8 @@ public class PromotionDetail implements Serializable {
         this.product = product;
         this.promotion = promotion;
     }
+
+    public PromotionDetail(@NonNull int discount) {
+        this.discount = discount;
+    }
 }

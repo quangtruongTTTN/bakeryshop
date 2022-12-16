@@ -32,7 +32,26 @@ import NotificationService from "../../../services/NotificationService";
 import ShoppingCartIcon from "@material-ui/icons/ShoppingCart";
 import { toast } from "react-toastify";
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
+import { createTheme } from '@material-ui/core/styles'
 const SOCKET_URL = "ws://localhost:8080/ws/message";
+
+const theme = createTheme({
+  palette: {
+    /* you should already have stuff here, keep it */
+  },
+  typography: {
+    /* you should already have stuff here, keep it */
+  },
+
+  overrides: {
+    MuiListItem: {
+      root: {
+        backgroundColor: "red",
+      },
+    },
+  },
+});
+
 const Navbar = () => {
   const auth = useSelector((state) => state.auth);
   const history = useHistory();
@@ -41,6 +60,7 @@ const Navbar = () => {
   const [data, setData] = useState();
   const [notifications, setNotifications] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
+
   const loadData = async () => {
     await NotificationService.loadNotification()
       .then((resp) => setNotifications(resp.data))
@@ -105,14 +125,38 @@ const Navbar = () => {
   const drawerWidth = 240;
 
   const useStyles = makeStyles((theme) => ({
+
+    MuiMenuItem: {
+      backgroundColor: "brown",
+      minHeight: '4.8rem',
+      // Due to a bug in mui we need to explicitly override media with the default of 48px
+      '@media (min-width: 600px)': {
+        minHeight: '4.8rem',
+      },
+      wordBreak: "break-all",
+      overflowWrap: "break-word",
+      wordWrap: "break-word",
+      maxWidth: 300,
+
+    },
     hover: {
       "&:hover": {
-          //   backgroundColor: "white !important",
-          backgroundColor: "#e7deb5",
+        //   backgroundColor: "white !important",
+        backgroundColor: "#e7deb5",
+        wordBreak: "break-all",
+        overflowWrap: "break-word",
+        wordWrap: "break-word",
+        maxWidth: 300,
       },
-  },
+    },
     root: {
       display: "flex",
+      whiteSpace: "unset",
+      wordBreak: "break-all"
+    },
+    root1: {
+      whiteSpace: "unset",
+      wordBreak: "break-all"
     },
     toolbar: {
       paddingRight: 24, // keep right padding when drawer closed
@@ -152,7 +196,7 @@ const Navbar = () => {
       color: "red"
     },
 
-    
+
     menuButtonHidden: {
       display: "none",
     },
@@ -218,8 +262,13 @@ const Navbar = () => {
       .then(() => console.log(id))
       .catch((error) => console.log(error));
   }
-  const handleSearch = (order) => {
+  const handleSearch = (order,product) => {
+    if(product ===null ){
 
+      
+    }else{
+      history.push("/product/detail", { product: product });
+    }
     // Notification.error(name);
     if (order === null) {
       // Notification.success("Không tìm thấy đơn hàng");
@@ -235,6 +284,7 @@ const Navbar = () => {
   return (
     <>
       <AppBar
+        theme={theme}
         position="absolute"
         className={clsx(classes.appBar, open && classes.appBarShift)}
       >
@@ -262,8 +312,8 @@ const Navbar = () => {
           </Typography>
           <IconButton color="inherit">
             {/* <Badge badgeContent={data?.length ?? 0} color="secondary"> */}
-            <Badge badgeContent={notifications.length} color="secondary"
-            // renderItems={(item, index) => renderNotificationItem(item, index)}
+            <Badge badgeContent={notifications.filter(p => !p.read).length} color="secondary"
+            // notifications.filter(p => !p.read).length  notifications.length
             >
 
               <NotificationsIcon
@@ -276,77 +326,85 @@ const Navbar = () => {
             </Badge>
           </IconButton>
           <Menu
-            id="simple-menu"
+            display='flex'
+            // id="simple-menu"
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
             onClose={handleClose}
             // MenuListProps={{ onMouseLeave: handleClose }}
-            style={{ marginTop: 25, marginLeft: -100, width: "350", maxWidth: "10" }}
+            style={{
+
+              marginTop: 25, marginLeft: -100, width: 450,
+              overflowWrap: "break-word",
+              wordWrap: "break-word",
+
+              maxLines: 3
+            }}
+            className={classes.root1}
+            // classes={classes.root1}
             badge={notifications.length}
+            // badge={notifications.filter(p => !p.read).length}style={{overflowWrap: "break-word"}}
             contentData={notifications}
+
           // renderItems={(item, index) => renderNotificationItem(item, index)}
           >
-            <MenuItem
-              style={{
-                paddingLeft: 100,
-                paddingRight: 100,
-                color: "#ff9902",
-                backgroundColor: "transparent",
 
-              }}
-              icon="bx bx-bell"
-
-            />
             {notifications?.length > 0 && auth.user !== null ? (
-              <MenuList style={{ overflowY: "scroll", height: 300, maxWidth: 400, maxLines: 3 }}>
+              <MenuList
+                // className={classes.MuiMenuItem}
+                style={{
+                  overflowY: "scroll",
+                  height: 400,
+                  width: 450,
+                  // maxWidth: 300,
+                  whiteSpace: 'pre-wrap', overflowWrap: 'break-word',
+                  maxLines: 2
+                }}>
                 {notifications?.map((item) => (
-                  <MenuItem
+
+                  <div
                     style={{
-                      display: "flex",
-                      // backgroundColor: "transparent",
-                      paddingLeft: 20,
-                      paddingRight: 20,
-                      height: 60,
-                      
-                    }}
-                    className={classes.hover, item.read === false ? ((classes.textTest)) : "text-danger"}
-                    key={item.id}
-                    onClick={() => { handleSearch(item?.order); readHandler(item.id);  handleClose() } }
-                  // onClick={e => {e.preventDefault(); handleSearch(item?.order)}}
-                  >
-                    <ShoppingCartIcon />
-                    <div className="notification-item" >
-                      {/* <i className="bx bx-package">className={classes.hover}</i> */}
-                      {item.read === 1 ? (<span  >{item.content}</span>)
-                      :(<span >{item.content}</span>)}
-                      
-                    </div>
+                      display: "flex"
+                    }}>
+                      <ShoppingCartIcon />
                     {/* <img
                       alt={1233}
                       src={"http://res.cloudinary.com/ptithcmn18dccn237/image/upload/v1668221038/image/keflfbgn9tstr2em4ms0.jpg"}
                       width={50}
                     /> */}
+                    <div onClick={() => { handleSearch(item?.order, item?.product); readHandler(item.id); handleClose() }}
+                      className={classes.hover, item.read === false ? ((classes.textTest)) : "text-danger"}
+                      style={{ wordWrap: "break-word", maxLines: 2 }}>
+                      {item.read === 1 ? (<div style={{
+                        overflowWrap: "break-word",
+                        wordWrap: "break-word",
+                        width: 350,
+                        maxLines: 2
 
-                  </MenuItem>
+                      }}>{item.content}</div>)
+                        : (<div style={{
+                          overflowWrap: "break-word",
+                          wordWrap: "break-word",
+                          width: 350,
+                          maxLines: 2
+                        }}> {item.content}</div>)}
+                    </div>
+
+
+                  </div>
+
                 ))}
                 <MenuItem
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  color: "inherit",
-                  backgroundColor: "transparent",
-                }}
-              >
-                Xem tất cả
-              </MenuItem>
-                {/* <Button
-                variant="outlined"
-                size="small"
-                style={{ color: "inherit" ,alignContent: "center"}}
-                alignItems= "center"
-              >
-                Xem chi tiết
-              </Button> */}
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    color: "inherit",
+                    backgroundColor: "transparent",
+                  }}
+                >
+                  Xem tất cả
+                </MenuItem>
+
               </MenuList>
             ) : (
               <MenuItem

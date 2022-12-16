@@ -55,9 +55,10 @@
 }
 
 .notification-item {
-  display: flex;
-  align-items: center;
-  padding: 20px;
+  word-wrap: break-word;
+  /* display: flex; */
+  /* align-items: center; */
+  /* padding: 20px; */
 }
 
 .notification-item:hover {

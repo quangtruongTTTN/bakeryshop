@@ -1,10 +1,7 @@
 package com.ptithcm.bakeryshopapi.controller;
 
 import com.ptithcm.bakeryshopapi.config.ERole;
-import com.ptithcm.bakeryshopapi.entity.Product;
-import com.ptithcm.bakeryshopapi.entity.Role;
-import com.ptithcm.bakeryshopapi.entity.User;
-import com.ptithcm.bakeryshopapi.entity.Wishlist;
+import com.ptithcm.bakeryshopapi.entity.*;
 import com.ptithcm.bakeryshopapi.payload.request.EmailRequest;
 import com.ptithcm.bakeryshopapi.payload.request.ProfileRequest;
 import com.ptithcm.bakeryshopapi.payload.request.UserRequest;
@@ -40,6 +37,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -189,8 +187,36 @@ public class UserController {
         for(Wishlist wl : wishlists) {
             products.add(productRepository.findById(wl.getProductId()).get());
         }
+        products= products.stream().filter(p -> p.getCategoryId().getDeletedAt() == null && p.getDeletedAt() == null)
+                .collect(Collectors.toList());
+        for (Product p : products) {
+            if (p.getProductDetails() != null) {
+                Collection<ProductDetail> productDetails = p.getProductDetails()
+                        .stream().filter(pd -> pd.getDeletedAt() == null).collect(Collectors.toList());
+                p.setProductDetails(productDetails);
+            }
+        }
+        for (Product p : products) {
+            if (p.getPromotionDetails() != null) {
+                List<PromotionDetail> promotionDetails = p.getPromotionDetails().stream()
+                        .sorted(Comparator.comparing(PromotionDetail::getDiscount).reversed())
+                        .collect(Collectors.toList());
+                p.setPromotionDetails(promotionDetails);
+            }
+        }
+        for (Product p : products) {
+            Collection<ProductDetail> productDetails = p.getProductDetails();
+            for(ProductDetail pd : productDetails){
+                if (pd.getPriceHistories() != null) {
+                    List<PriceHistory> priceHistories = pd.getPriceHistories().stream()
+                            .sorted(Comparator.comparing(PriceHistory::getCreatedAt).reversed())
+                            .collect(Collectors.toList());
+                    pd.setPriceHistories(priceHistories);
+                }
+            }
+            p.setProductDetails(productDetails);
 
-
+        }
         wishlistResponse.setProducts(products);
         wishlistResponse.setQuantity(products.size());
         userReponse.setUser(user);

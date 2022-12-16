@@ -2,9 +2,11 @@ package com.ptithcm.bakeryshopapi.entity;
 
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.CreationTimestamp;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -42,4 +44,7 @@ public class Notification implements Serializable {
     private Product product;
 @Column(name = "type")
     private Integer type;
+
+    @CreationTimestamp
+    private Date createdAt;
 }

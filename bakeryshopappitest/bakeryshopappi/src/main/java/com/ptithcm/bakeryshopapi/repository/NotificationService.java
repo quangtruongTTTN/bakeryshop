@@ -16,7 +16,7 @@ public class NotificationService {
 //    @Override
 //    public List<Notification> loadNotification(boolean read, boolean deliver) {
     public List<Notification> loadNotification() {
-        return notificationRepository.findAll();
+        return notificationRepository.findTop10NotificationByOrderByCreatedAtDesc();
 //        return notificationRepository.getNotificationByReadIsFalseAndDeliverIsTrue();
 //        return notificationRepository.getNotificationByReadEqualsAndDeliverEquals(read, deliver);
     }

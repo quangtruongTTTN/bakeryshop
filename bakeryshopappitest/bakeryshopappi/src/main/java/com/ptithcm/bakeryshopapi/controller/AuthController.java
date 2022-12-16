@@ -2,11 +2,13 @@ package com.ptithcm.bakeryshopapi.controller;
 
 
 import com.ptithcm.bakeryshopapi.config.ERole;
+import com.ptithcm.bakeryshopapi.entity.PasswordResetToken;
 import com.ptithcm.bakeryshopapi.entity.Role;
 import com.ptithcm.bakeryshopapi.entity.User;
 import com.ptithcm.bakeryshopapi.payload.request.*;
 import com.ptithcm.bakeryshopapi.payload.response.JwtResponse;
 import com.ptithcm.bakeryshopapi.payload.response.MessageResponse;
+import com.ptithcm.bakeryshopapi.repository.IPasswordResetTokenRepository;
 import com.ptithcm.bakeryshopapi.repository.IRoleRepository;
 import com.ptithcm.bakeryshopapi.repository.IUserRepository;
 import com.ptithcm.bakeryshopapi.security.jwt.JwtUtils;
@@ -31,10 +33,7 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.validation.Valid;
 import java.io.UnsupportedEncodingException;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -61,6 +60,9 @@ public class AuthController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private IPasswordResetTokenRepository passwordResetTokenRepository;
     @Value("${javadocfast.app.jwtExpirationMs}")
     private int jwtExpirationMs;
 
@@ -248,7 +250,7 @@ public class AuthController {
 
     @GetMapping("/{email}")
     public ResponseEntity<?> checkEmail(@PathVariable String email) {
-        if(!userRepository.existsByEmailAndEmailNotLike(email, "admin@gmail.com")) {
+        if (!userRepository.existsByEmailAndEmailNotLike(email, "admin@gmail.com")) {
             return ResponseEntity.ok(new MessageResponse("Email này chưa đăng ký"));
         }
         return ResponseEntity.ok(new MessageResponse("Email này đã đăng ký"));
@@ -257,7 +259,7 @@ public class AuthController {
     @PostMapping("/reset-pass")
     public ResponseEntity<?> updatePassword(@RequestBody AuthRequest authRequest) {
 
-        if(!userRepository.existsByEmail(authRequest.getEmail())) {
+        if (!userRepository.existsByEmail(authRequest.getEmail())) {
             return ResponseEntity.ok(new MessageResponse("Không tìm thấy email này"));
         }
 
@@ -270,15 +272,15 @@ public class AuthController {
 
     @PostMapping("/changePassword")
     public ResponseEntity<?> updatePasswordByUserName(@RequestBody ChangePasswordRequest changePasswordRequest) {
-        if(!userRepository.existsByUsername(changePasswordRequest.getUsername())) {
+        if (!userRepository.existsByUsername(changePasswordRequest.getUsername())) {
             return ResponseEntity.ok(new MessageResponse("Không tìm thấy Username này"));
         }
         User user = userRepository.findByUsername(changePasswordRequest.getUsername()).get();
-        if(encoder.matches(changePasswordRequest.getOldPassword(),user.getPassword())){
+        if (encoder.matches(changePasswordRequest.getOldPassword(), user.getPassword())) {
             user.setPassword(encoder.encode(changePasswordRequest.getPassword()));
             userRepository.save(user);
             return ResponseEntity.ok(HttpStatus.OK);
-        }else{
+        } else {
             return ResponseEntity.ok(new MessageResponse("Mật khẩu không chính xác"));
         }
     }
@@ -287,9 +289,9 @@ public class AuthController {
     public ResponseEntity<?> processForgotPassword(@RequestBody EmailRequest request) {
         String email = request.getEmail();
         String token = RandomString.make(30);
-        if(!userRepository.existsByEmail(request.getEmail())) {
+        if (!userRepository.existsByEmail(request.getEmail())) {
             return ResponseEntity.ok(new MessageResponse("Không tìm thấy Email này"));
-        }else{
+        } else {
             try {
                 userService.updateResetPasswordToken(token, email);
 //            String resetPasswordLink = "http://localhost:3000" + "/api/auth/reset_password?token=" + token;
@@ -303,7 +305,6 @@ public class AuthController {
 //            model.addAttribute("error", ex.getMessage());
 //        }
             catch (UnsupportedEncodingException | MessagingException e) {
-//            model.addAttribute("error", "Error while sending email");
                 return ResponseEntity.ok(new MessageResponse("Error while sending email"));
             }
         }
@@ -315,37 +316,72 @@ public class AuthController {
     @GetMapping("/reset_password")
     public ResponseEntity<?> showResetPasswordForm(@Param(value = "token") String token) {
 //    public String showResetPasswordForm(@Param(value = "token") String token) {
-        User user = userService.getByResetPasswordToken(token);
-//        model.addAttribute("token", token);
-
-        if (user == null) {
-            return ResponseEntity.ok(new MessageResponse("Invalid Token"));
-//            model.addAttribute("message", "Invalid Token");
-//            return "message";
+//        User user = userService.getByResetPasswordToken(token);
+        PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByToken(token);
+        if (passwordResetToken == null) {
+            return ResponseEntity.ok(new MessageResponse("Invalid Token 1"));
         }
-        return ResponseEntity.ok(new MessageResponse("OK"));
+        String result = validatePasswordResetToken(token);
+        if (result == null) {
+
+            User user = userRepository.findUserById(passwordResetToken.getUser().getId());
+            if (user == null) {
+                return ResponseEntity.ok(new MessageResponse(result));
+            }
+            return ResponseEntity.ok(new MessageResponse("OK"));
+        } else {
+            return ResponseEntity.ok(new MessageResponse(result));
+        }
+
 //        return "OK";
     }
+
     @PostMapping("/reset_password")
     public ResponseEntity<?> processResetPassword(@RequestBody ResetPasswordRequest request) {
 //    public String processResetPassword(HttpServletRequest request, Model model) {
         String token = request.getToken();
+        String result = validatePasswordResetToken(token);
         String password = request.getPassword();
+        if (result == null) {
+            PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByToken(token);
+            User user = userRepository.findUserById(passwordResetToken.getUser().getId());
 
-        User user = userService.getByResetPasswordToken(token);
-//        model.addAttribute("title", "Reset your password");
+            if (user == null) {
+                return ResponseEntity.ok(new MessageResponse("Invalid Token 12"));
+            } else {
 
-        if (user == null) {
-            return ResponseEntity.ok(new MessageResponse("Invalid Token"));
-        } else {
-            userService.updatePassword(user, password);
+                userService.updatePassword(user, password);
 //            return ResponseEntity.ok(new MessageResponse("You have successfully changed your password."));
-            return ResponseEntity.ok(new MessageResponse("Password reset successful, you can now login"));
+                return ResponseEntity.ok(new MessageResponse("Password reset successful, you can now login"));
 //            model.addAttribute("message", "You have successfully changed your password.");
+            }
+        } else {
+            return ResponseEntity.ok(new MessageResponse(result));
         }
+//        User user = userService.getByResetPasswordToken(token);
+
+//        String result = validatePasswordResetToken(token);
+
 
 //        return "message";
     }
+
+    public String validatePasswordResetToken(String token) {
+        final PasswordResetToken passToken = passwordResetTokenRepository.findByToken(token);
+
+        return !isTokenFound(passToken) ? "Invalid Token"
+                : passToken.isPasswordExpired() ? "Expired Token"
+                : null;
+    }
+
+    private boolean isTokenFound(PasswordResetToken passToken) {
+        return passToken != null;
+    }
+//    private boolean isTokenExpired(PasswordResetToken passToken) {
+//        final Calendar cal = Calendar.getInstance();
+//        return passToken.getExpiryDate().before(cal.getTime());
+//    }
+
     public void sendEmail(String recipientEmail, String link)
             throws MessagingException, UnsupportedEncodingException {
         MimeMessage message = mailSender.createMimeMessage();

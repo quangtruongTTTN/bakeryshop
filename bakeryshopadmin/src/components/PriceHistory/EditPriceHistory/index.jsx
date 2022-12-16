@@ -486,7 +486,7 @@ const EditProduct = () => {
               }
                    
               </TableCell> */}
-                <TableCell>{u.priceHistories[0].price}</TableCell>
+                <TableCell>{u?.priceHistories[0].price}</TableCell>
                 <TableCell>{u.stock}</TableCell>
                 {/* <TableCell>{onHandleSelectProductDetails(u)}</TableCell> */}
                 {/* <TableCell>{onHandleSelectProductDetails(u)}</TableCell> */}

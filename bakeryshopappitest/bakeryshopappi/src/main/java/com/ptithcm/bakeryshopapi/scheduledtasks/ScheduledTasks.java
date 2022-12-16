@@ -33,7 +33,7 @@ public class ScheduledTasks {
 //        }
 //    }
 
-    @Scheduled(cron = "0 11 21 ? * * ")
+    @Scheduled(cron = "0 31 21 ? * * ")
     public void scanProduct(){
         List<Product> products = productRepository.findAll();
         for(Product p: products){

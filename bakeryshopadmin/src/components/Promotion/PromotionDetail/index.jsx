@@ -187,7 +187,7 @@ const PromotionDetail = () => {
             return item;
       });
       
-      localStorage.setItem("productImport", JSON.stringify(selectedIds));
+      localStorage.setItem("promotionDetail", JSON.stringify(selectedIds));
     },
     // onSelectionModelChange: (ids) => {
     //   Notification.success(JSON.parse(ids));

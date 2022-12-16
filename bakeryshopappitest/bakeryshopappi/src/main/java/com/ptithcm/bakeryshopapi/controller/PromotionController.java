@@ -1,8 +1,11 @@
 package com.ptithcm.bakeryshopapi.controller;
 
 import com.ptithcm.bakeryshopapi.entity.Promotion;
+import com.ptithcm.bakeryshopapi.payload.request.PromotionRequest;
+import com.ptithcm.bakeryshopapi.payload.request.PromotionUpdateRequest;
 import com.ptithcm.bakeryshopapi.payload.response.MessageResponse;
 import com.ptithcm.bakeryshopapi.repository.IPromotionRepository;
+import com.ptithcm.bakeryshopapi.repository.IUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,6 +24,9 @@ public class PromotionController {
 
     @Autowired
     private IPromotionRepository promotionRepository;
+
+    @Autowired
+    private IUserRepository userRepository;
 
     @GetMapping("/list")
     public ResponseEntity<?> getPromotions() {
@@ -47,15 +53,26 @@ public class PromotionController {
     }
 
     @PostMapping("/add")
-    public ResponseEntity<?> addPromotion(@RequestBody Promotion promotion) {
+    public ResponseEntity<?> addPromotion(@RequestBody PromotionRequest promotionRequest) {
+        Promotion promotion = new Promotion();
+        promotion.setName(promotionRequest.getName());
+        promotion.setCreatedAt(new Date());
+        promotion.setStartDate(promotionRequest.getStartDate());
+        promotion.setDeletedAt(null);
+        promotion.setEndDate(promotionRequest.getEndDate());
+        promotion.setEmployeeId(userRepository.findUserById(promotionRequest.getEmployeeId()));
         return ResponseEntity.ok(promotionRepository.save(promotion));
     }
 
     @PutMapping("/edit")
-    public ResponseEntity<?> editPromotion(@RequestBody Promotion promotion) {
-        if (promotionRepository.existsById(promotion.getId())) {
-            Promotion promotionUpdate = promotionRepository.findById(promotion.getId()).get();
-            promotionUpdate.setName(promotion.getName());
+    public ResponseEntity<?> editPromotion(@RequestBody PromotionUpdateRequest promotionUpdateRequest) {
+        if (promotionRepository.existsById(promotionUpdateRequest.getId())) {
+            Promotion promotionUpdate = promotionRepository.findPromotionsById(promotionUpdateRequest.getId());
+            promotionUpdate.setName(promotionUpdateRequest.getName());
+            promotionUpdate.setStartDate(promotionUpdateRequest.getStartDate());
+            promotionUpdate.setEndDate(promotionUpdateRequest.getEndDate());
+            promotionUpdate.setEmployeeId(userRepository.findUserById(promotionUpdateRequest.getEmployeeId()));
+            promotionUpdate.setCreatedAt(new Date());
             promotionRepository.save(promotionUpdate);
             return ResponseEntity.ok(promotionUpdate);
         } else {

@@ -10,5 +10,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface IPromotionRepository extends JpaRepository<Promotion, Long> {
     Page<Promotion> findPromotionByNameLike(String keyword, Pageable pageable);
+    Promotion findPromotionsById(long id);
 
 }

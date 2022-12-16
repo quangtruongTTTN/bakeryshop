@@ -597,9 +597,12 @@ public class OrderController {
                 if(promotionDetails.size()>0){
 
 //                    orderDetailnew.setPriceCurrent(priceHistories.get(0).getPrice()*(1-promotionDetails.get(0).getDiscount()/100));
-                    double discout = (double) promotionDetails.get(0).getDiscount()/100;
+//                    double discout = 1 - promotionDetails.get(0).getDiscount()/100.00;
+                    long discout = 100 - promotionDetails.get(0).getDiscount();
                     System.err.println(discout);
-                    long priceNew = (long) (priceHistories.get(0).getPrice()* (1- discout));
+                    long priceNew = (long) (priceHistories.get(0).getPrice()* ( (double) Math.floor(discout ) / 100));
+                    System.err.println((double) Math.floor(discout ) / 100);
+//                    long priceNew = (long) (priceHistories.get(0).getPrice()* (1- discout));
 
                     orderDetailnew.setPriceCurrent(priceNew);
 
@@ -607,6 +610,7 @@ public class OrderController {
                     orderDetailnew.setPriceCurrent(priceHistories.get(0).getPrice());
 
                 }
+//                orderDetailRepository.save(orderDetailnew);
 
             }
 
@@ -689,7 +693,7 @@ public class OrderController {
         String note = orderRequest.getNote();
         String size = orderRequest.getSizeOption();
 //        String add = orderRequest.getAdditionOption();
-        ProductDetail productDetail = productDetailRepository.findById(orderRequest.getProductDetailId()).get();
+        ProductDetail productDetail = productDetailRepository.findProductDetailById(orderRequest.getProductDetailId());
 //        ProductDetail productDetail = productDetailRepository.findById(88l).get();
         int quantity = orderRequest.getQuantity();
         long currenPrice = orderRequest.getPriceCurrent();

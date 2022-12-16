@@ -86,7 +86,7 @@ const Promotion = () => {
   const [valueToSortDir, setValueToSortDir] = useState("asc");
   const [keyword, setKeyword] = useState("");
   const [name, setName] = useState("");
-  const [pageSize, setPageSize] = useState(3);
+  const [pageSize, setPageSize] = useState(5);
 
   useEffect(() => {
     dispatch(
@@ -157,7 +157,8 @@ const Promotion = () => {
     { name: "name", label: "Tên loại sản phẩm", dir: "asc" },
     { name: "employeeId", label: "Mã nhân viên tạo", dir: "asc" },
     { name: "createdAt", label: "Ngày tạo" },
-    { name: "endDate", label: "Ngày hết" },
+    { name: "startDate", label: "Ngày bắt đầu" },
+    { name: "endDate", label: "Ngày kết thúc" },
     { label: "Trạng thái" },
     { label: "Hành Động" },
   ];
@@ -248,8 +249,8 @@ const Promotion = () => {
               onChange={handlePageSize}
               className={classes.select}
             >
-              <option value={3}>3</option>
               <option value={5}>5</option>
+              <option value={10}>10</option>
             </Select>
           </FormControl>
         </Grid>
@@ -267,12 +268,15 @@ const Promotion = () => {
             {promotions.map((u) => (
               <TableRow className={classes.hover} key={u.id}>
                 <TableCell>{u.name}</TableCell>
-                <TableCell>{u?.employeeId?.id}</TableCell>
+                <TableCell>{u?.employeeId?.username}</TableCell>
                 <TableCell>
-                  <Moment format="DD/MM/YYYY">{u?.createdAt}</Moment>
+                  <Moment format="DD/MM/YYYY HH:mm">{u?.createdAt}</Moment>
                 </TableCell>
                 <TableCell>
-                  <Moment format="DD/MM/YYYY">{u?.endDate}</Moment>
+                  <Moment format="DD/MM/YYYY HH:mm">{u?.startDate}</Moment>
+                </TableCell>
+                <TableCell>
+                  <Moment format="DD/MM/YYYY HH:mm">{u?.endDate}</Moment>
                 </TableCell>
                 <TableCell>
                   {u.deletedAt ? (

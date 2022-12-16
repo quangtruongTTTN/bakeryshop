@@ -23,25 +23,27 @@ List<Product> findProductsByNameLike(String keyword);
 //    @Query(value = "SELECT * FROM Product p LEFT JOIN OrderDetail O ON p.id=O.product_id", nativeQuery = true)
 //    List<Product> getHotProduct(String cate, String cate2);
 //    @Query(value = "SELECT TOP(4) O.product_id FROM OrderDetail O GROUP BY O.product_id ORDER BY SUM(o.quantity) DESC", nativeQuery = true)
-    @Query(value = "SELECT TOP(4) p.product_id FROM product_detail p inner join OrderDetail O   on p.id=o.product_detail_id GROUP BY p.product_id ORDER BY SUM(o.quantity) DESC", nativeQuery = true)
+    @Query(value = "SELECT TOP(8) p.product_id FROM product_detail p inner join OrderDetail O   on p.id=o.product_detail_id GROUP BY p.product_id ORDER BY SUM(o.quantity) DESC", nativeQuery = true)
     List<String> getHotProduct(String cate, String cate2);
 //    @Query("SELECT u FROM Product u WHERE u.id = ?1")
 
-    @Query(value = "SELECT TOP(4) W.product_id FROM wishlist W GROUP BY W.product_id ORDER BY COUNT(W.product_id) DESC", nativeQuery = true)
+    @Query(value = "SELECT TOP(8) W.product_id FROM wishlist W GROUP BY W.product_id ORDER BY COUNT(W.product_id) DESC", nativeQuery = true)
     List<String> getFavoriteProduct(String cate, String cate2);
 
     Product findProductById(String id);
     Product findProductByProductDetails_Id(long id);
 
-    List<Product> findProductsByCategoryId_Name(String name, Sort sort);
+    List<Product> findProductsByCategoryId_Name(String name);
 
     Page<Product> findProductsByCategoryId_Name(String name, Pageable pageable);
+    List<Product> findProductsByCategoryId_NameAndNameContaining(String name,String keyword);
     Page<Product> findProductsByCategoryId_NameAndNameContaining(String name,Pageable pageable,String keyword);
 
 //    Page<Product> findProductsByCategoryId_NameAndSaleOff(Timestamp timeNow,String name, Pageable pageable);
 
     //    List<Product> findProductsByCategoryId_NameNotLikeAndCategoryId_NameNotLike(String cate, String cate2, Sort sort);
-    List<Product> findProductsByCategoryId_NameNotLike(String cate, Sort sort);
+    List<Product> findProductsByCategoryId_NameNotLike(String cate);
+    List<Product> findProductsByCategoryId_NameNotLikeAndNameContaining(String cate, String keyword);
     Page<Product> findProductsByCategoryId_NameNotLikeAndNameContaining(String cate,Pageable pageable,String keyword);
 
     Page<Product> findProductsByCategoryId_NameNotLike(String cate, Pageable pageable);
@@ -55,16 +57,16 @@ List<Product> findProductsByNameLike(String keyword);
 //    Page<Product> findDistinctByPromotionDetails_Promotion_Id(long id, Pageable pageable);
 List<Product> findDistinctByPromotionDetails_Promotion_Id(long id);
 
-    Page<Product> findProductBySaleOffDiscountLike(Double discount, Pageable pageable);
+//    Page<Product> findProductBySaleOffDiscountLike(Double discount, Pageable pageable);
 //    Page<Product> findProductByPromotionDetailsDiscountLike(int discount, Pageable pageable);
 
     List<Product> findProductByPromotionDetailsDiscountLike(int discount);
 
 //    Page<Product> findProductBySaleOff_EndDateGreaterThan(Timestamp timeNow, Pageable pageable); where [D].[promotion_id] = ?1
-    Page<Product> findDistinctProductBySaleOff_EndDateGreaterThan(Timestamp timeNow, Pageable pageable);
+//    Page<Product> findDistinctProductBySaleOff_EndDateGreaterThan(Timestamp timeNow, Pageable pageable);
     Page<Product> findDistinctProductByProductDetails_Id(Timestamp timeNow, Pageable pageable);
 
-    Page<Product> findProductBySaleOffNull(Pageable pageable);
+//    Page<Product> findProductBySaleOffNull(Pageable pageable);
 
 //    Page<Product> findProductBySaleOffNotNull(Pageable pageable);
     Page<Product> findProductByPromotionDetailsNotNull(Pageable pageable);

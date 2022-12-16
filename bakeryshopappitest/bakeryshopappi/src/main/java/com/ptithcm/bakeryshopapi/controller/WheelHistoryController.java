@@ -55,7 +55,7 @@ public class WheelHistoryController {
     public ResponseEntity<?> insert(@RequestBody WheelHistoryRequest historyRequest) {
 
         WheelHistory wheelHistory = new WheelHistory();
-        wheelHistory.setFullName(historyRequest.getFullName());
+        wheelHistory.setUser(userRepository.findUserById(historyRequest.getUserId()));
         wheelHistory.setReward(historyRequest.getReward());
         wheelHistory.setCreatedAt(new Date());
         wheelHistoryRepository.save(wheelHistory);

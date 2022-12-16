@@ -7,6 +7,7 @@ import com.ptithcm.bakeryshopapi.service.CloudinaryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -80,7 +81,18 @@ public class ProductDetailController {
 
         return ResponseEntity.ok(productDetails);
     }
-
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('EMPLOYEE')")
+    public ResponseEntity<?> deleteProductDetailById(@PathVariable long id) {
+        ProductDetail productDetail = productDetailRepository.findById(id).get();
+        if (productDetail.getDeletedAt() == null) {
+            productDetail.setDeletedAt(new Date());
+        } else {
+            productDetail.setDeletedAt(null);
+        }
+        productDetailRepository.save(productDetail);
+        return new ResponseEntity(productDetail, HttpStatus.OK);
+    }
     //    @GetMapping("")
 //    public ResponseEntity<?> getOneProducts(
 //            @RequestParam(defaultValue = "") String id
